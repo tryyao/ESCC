@@ -1,0 +1,32 @@
+rm(list = ls())
+load("TCGA-ESCA.Rdata")
+load("TCGA-ESCA.Rdata")
+
+if(!require(tinyplanet))devtools::install_local("tinyplanet-master.zip",upgrade = F)
+library(ggplot2)
+library(tinyplanet)
+exp[1:4,1:4]
+dat = log(exp+1)
+pca.plot = draw_pca(dat,group_list);pca.plot
+save(pca.plot,file = paste0(cancer_type,"pcaplot.Rdata"))
+
+cg1 = rownames(DESeq2_DEG)[DESeq2_DEG$change !="NOT"]
+cg2 = rownames(edgeR_DEG)[edgeR_DEG$change !="NOT"]
+cg3 = rownames(limma_voom_DEG)[limma_voom_DEG$change !="NOT"]
+
+h1 = draw_heatmap(dat[cg1,],group_list,scale_before = T)
+h2 = draw_heatmap(dat[cg2,],group_list,scale_before = T)
+h3 = draw_heatmap(dat[cg3,],group_list,scale_before = T)
+
+#m2d = function(x){
+#  mean(abs(x))+2*sd(abs(x))
+#}
+
+v1 = draw_volcano(DESeq2_DEG,pkg = 1,logFC_cutoff = 1)
+v2 = draw_volcano(edgeR_DEG,pkg = 2,logFC_cutoff = 1)
+v3 = draw_volcano(limma_voom_DEG,pkg = 3,logFC_cutoff = 1)
+
+library(patchwork)
+(h1 + h2 + h3) / (v1 + v2 + v3) +plot_layout(guides = 'collect')
+
+ggsave(paste0(cancer_type,"heat_vo.png"),width = 15,height = 10)
