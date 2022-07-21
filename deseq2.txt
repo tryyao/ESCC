@@ -1,0 +1,32 @@
+library(DESeq2)
+colData <- data.frame(row.names =colnames(exp), 
+                      condition=group_list)
+if(!file.exists(paste0(cancer_type,"dd.Rdata"))){
+  dds <- DESeqDataSetFromMatrix(
+  countData = exp,
+  colData = colData,
+  design = ~ condition)
+  dds <- DESeq(dds)
+  save(dds,file = paste0(cancer_type,"dd.Rdata"))
+}
+load(paste0(cancer_type,"dd.Rdata"))
+load(file="TCGA-ESCA.Rdata")
+
+# 两两比较
+res <- results(dds, contrast = c("condition",rev(levels(group_list))))
+resOrdered <- res[order(res$padj),] # 按照P值排序
+DEG <- as.data.frame(resOrdered)
+head(DEG)
+
+#添加change列标记基因上调下调
+logFC_cutoff <- #with(DEG,mean(abs(log2FoldChange)) + 2*sd(abs(log2FoldChange)) )
+logFC_cutoff <- 1
+DEG$change = as.factor(
+  ifelse(DEG$pvalue < 0.05 & abs(DEG$log2FoldChange) > logFC_cutoff,
+         ifelse(DEG$log2FoldChange > logFC_cutoff ,'UP','DOWN'),'NOT')
+)
+head(DEG)
+
+table(DEG$change)
+DESeq2_DEG <- DEG
+save(DESeq2_DEG,file = "DESeq2_DEG.Rdata")
