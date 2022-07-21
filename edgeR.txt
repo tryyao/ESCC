@@ -1,0 +1,31 @@
+rm(list = ls())
+load("TCGA-ESCA.Rdata")
+library(edgeR)
+
+dge <- DGEList(counts=exp,group=group_list)
+dge$samples$lib.size <- colSums(dge$counts)
+dge <- calcNormFactors(dge) 
+
+design <- model.matrix(~0+group_list)
+rownames(design)<-colnames(dge)
+colnames(design)<-levels(group_list)
+
+dge <- estimateGLMCommonDisp(dge,design)
+dge <- estimateGLMTrendedDisp(dge, design)
+dge <- estimateGLMTagwiseDisp(dge, design)
+
+fit <- glmFit(dge, design)
+fit2 <- glmLRT(fit, contrast=c(-1,1)) 
+
+DEG=topTags(fit2, n=nrow(exp))
+DEG=as.data.frame(DEG)
+#logFC_cutoff <- with(DEG,mean(abs(logFC)) + 2*sd(abs(logFC)) )
+logFC_cutoff <- 1
+DEG$change = as.factor(
+  ifelse(DEG$FDR < 0.05 & abs(DEG$logFC) > logFC_cutoff,
+         ifelse(DEG$logFC > logFC_cutoff ,'UP','DOWN'),'NOT')
+)
+head(DEG)
+table(DEG$change)
+edgeR_DEG <- DEG
+save(edgeR_DEG ,file = "edgeR_DEG .Rdata")
