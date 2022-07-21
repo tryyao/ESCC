@@ -1,0 +1,30 @@
+rm(list = ls())
+load("TCGA-ESCA.Rdata")
+load("TCGA-stamgdc.Rdata")
+load("TCGA-stampcaplot.Rdata")
+UP=function(df){
+  rownames(df)[df$change=="UP"]
+}
+DOWN=function(df){
+  rownames(df)[df$change=="DOWN"]
+}
+
+up = intersect(intersect(UP(DESeq2_DEG),UP(edgeR_DEG)),UP(limma_voom_DEG))
+down = intersect(intersect(DOWN(DESeq2_DEG),DOWN(edgeR_DEG)),DOWN(limma_voom_DEG))
+
+hp = draw_heatmap(exp[c(up,down),],group_list,scale_before = T,n_cutoff = 1.6)
+
+#上调、下调基因分别画维恩图
+
+up.plot <- draw_venn(UP(DESeq2_DEG),UP(edgeR_DEG),UP(limma_voom_DEG),
+                     "UPgene"
+)
+down.plot <- draw_venn(DOWN(DESeq2_DEG),DOWN(edgeR_DEG),DOWN(limma_voom_DEG),
+                       "DOWNgene"
+)
+#维恩图拼图
+
+library(patchwork)
+#up.plot + down.plot
+pca.plot + hp+up.plot +down.plot
+ggsave(paste0(cancer_type,"heat_ve_pca.png"),width = 15,height = 10)
